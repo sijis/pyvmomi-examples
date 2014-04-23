@@ -1,83 +1,21 @@
 from pyVmomi import vim
 from pyVim.connect import SmartConnect, Disconnect
 import getpass
+import vmutils
 
-def _get_obj(content, vimtype, name):
-    """
-    Get the vsphere object associated with a given text name
-    """
-    obj = None
-    container = content.viewManager.CreateContainerView(content.rootFolder, vimtype, True)
-    for c in container.view:
-        if c.name == name:
-            obj = c
-            break
-    return obj
-
-def _get_all_objs(content, vimtype):
-    """
-    Get all the vsphere objects associated with a given type
-    """
-    obj = {}
-    container = content.viewManager.CreateContainerView(content.rootFolder, vimtype, True)
-    for c in container.view:
-        obj.update({c: c.name})
-    return obj
-
-def get_vm_by_name(si, name):
-    """
-    Find a virtual machine by it's name and return it
-    """
-    return _get_obj(si.RetrieveContent(), [vim.VirtualMachine], name)
-
-def get_resource_pool(si, name):
-    """
-    Find a virtual machine by it's name and return it
-    """
-    return _get_obj(si.RetrieveContent(), [vim.ResourcePool], name)
-
-def get_resource_pools(si, name):
-    """
-    Returns all resource pools
-    """
-    return _get_all_objs(si.RetrieveContent(), [vim.ResourcePool])
-
-def get_datastores(si):
-    """
-    Returns all datastores
-    """
-    return _get_all_objs(si.RetrieveContent(), [vim.Datastore])
-
-def get_hosts(si):
-    """
-    Returns all hosts
-    """
-    return _get_all_objs(si.RetrieveContent(), [vim.HostSystem])
-
-def get_datacenters(si):
-    """
-    Returns all datacenters
-    """
-    return _get_all_objs(si.RetrieveContent(), [vim.Datacenter])
-
-def get_registered_vms(si):
-    """
-    Returns all vms
-    """
-    return _get_all_objs(si.RetrieveContent(), [vim.VirtualMachine])
-
-# Connecting to host
 si = None
-password = getpass.getpass()
+username = raw_input('Username: ')
+password = getpass.getpass(prompt='Password: ')
+vcenter = raw_input('vcenter: ')
 
 try:
-    si = SmartConnect(host='vcenter.domain.local', user='username', pwd=password, port=443)
+    si = SmartConnect(host=vcenter, user=username, pwd=password, port=443)
 except IOError, e:
     pass
 
 # Finding source VM
 newvm = raw_input('New vm name: ')
-template_vm = get_vm_by_name(si, 'centos-6.5-x64')
+template_vm = vmutils.get_vm_by_name(si, 'centos-6.5-x64')
 
 '''
 There are two roads for modifying a vm creation from a template
@@ -114,10 +52,13 @@ customspec = vim.vm.customization.Specification(nicSettingMap=[adaptermap], glob
 
 
 # Creating relocate spec and clone spec
-resource_pool = get_resource_pool(si, 'DEV')
+resource_pool = vmutils.get_resource_pool(si, 'DEV')
 relocateSpec = vim.vm.RelocateSpec(pool=resource_pool)
 #cloneSpec = vim.vm.CloneSpec(powerOn=True, template=False, location=relocateSpec, customization=customspec, config=vmconf)
 cloneSpec = vim.vm.CloneSpec(powerOn=True, template=False, location=relocateSpec, customization=None, config=vmconf)
 
 # Creating clone task
 clone = template_vm.Clone(name=newvm, folder=template_vm.parent, spec=cloneSpec)
+
+# close out connection
+Disconnect(si)
