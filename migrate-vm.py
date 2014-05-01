@@ -19,6 +19,8 @@ except IOError, e:
 if esx_host == '':
     all_hosts = vmutils.get_hosts(si)
     esx_host = vmutils.get_host_by_name(si, random.choice(all_hosts.values()))
+else:
+    esx_host = vmutils.get_host_by_name(si, esx_host)
 
 # Finding source VM
 vm = vmutils.get_vm_by_name(si, vm_name)
