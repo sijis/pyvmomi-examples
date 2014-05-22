@@ -61,7 +61,7 @@ def get_resource_pool(si, name):
     """
     return _get_obj(si.RetrieveContent(), [vim.ResourcePool], name)
 
-def get_resource_pools(si, name):
+def get_resource_pools(si):
     """
     Returns all resource pools
     """
